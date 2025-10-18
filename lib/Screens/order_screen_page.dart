@@ -27,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadFakeData() async {
-    final jsonStr = await rootBundle.loadString('assets/fake_data.json');
+    final jsonStr = await rootBundle.loadString('assets/data/fake_data.json');
     final Map<String, dynamic> data = jsonDecode(jsonStr);
 
     final List<Category> loadedCategories = (data['categories'] as List)

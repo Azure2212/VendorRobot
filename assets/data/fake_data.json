@@ -1,0 +1,46 @@
+{
+  "categories": [
+    {
+      "id": 1,
+      "name": "Drinks",
+      "products": [
+        {
+          "id": 1,
+          "name": "Coca-Cola",
+          "imagePath": "assets/images/cocacola.png",
+          "price": 1.5
+        },
+        {
+          "id": 2,
+          "name": "Sprite",
+          "imagePath": "assets/images/sprite.png",
+          "price": 1.3
+        },
+        {
+          "id": 3,
+          "name": "Fanta",
+          "imagePath": "assets/images/fanta.png",
+          "price": 1.2
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Snacks",
+      "products": [
+        {
+          "id": 4,
+          "name": "Chips",
+          "imagePath": "assets/images/chips.png",
+          "price": 2.0
+        },
+        {
+          "id": 5,
+          "name": "Popcorn",
+          "imagePath": "assets/images/popcorn.png",
+          "price": 1.8
+        }
+      ]
+    }
+  ]
+}

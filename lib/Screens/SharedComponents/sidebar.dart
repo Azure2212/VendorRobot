@@ -43,11 +43,13 @@ class _SideBarState extends State<SideBar> {
           selectedButtonIndex = 1;
         } else {
           // fallback to widget.interactionType if saved value is invalid
-          selectedButtonIndex = (widget.interactionType == InteractionType.TOUCHSCREEN) ? 0 : 1;
+          selectedButtonIndex =
+              (widget.interactionType == InteractionType.TOUCHSCREEN) ? 0 : 1;
         }
       } else {
         // no saved value, use widget.interactionType
-        selectedButtonIndex = (widget.interactionType == InteractionType.TOUCHSCREEN) ? 0 : 1;
+        selectedButtonIndex =
+            (widget.interactionType == InteractionType.TOUCHSCREEN) ? 0 : 1;
       }
     });
   }
@@ -93,15 +95,23 @@ class _SideBarState extends State<SideBar> {
 
     final prefs = await SharedPreferences.getInstance();
     if (index == 0) {
-      await prefs.setString('interactionType', InteractionType.TOUCHSCREEN.toString());
+      await prefs.setString(
+        'interactionType',
+        InteractionType.TOUCHSCREEN.toString(),
+      );
     } else {
-      await prefs.setString('interactionType', InteractionType.VOICE.toString());
+      await prefs.setString(
+        'interactionType',
+        InteractionType.VOICE.toString(),
+      );
     }
 
     print("go");
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => HomeScreen()), // Replace HomeScreen with your actual widget name
+      MaterialPageRoute(
+        builder: (_) => const HomeScreen(),
+      ), // Replace HomeScreen with your actual widget name
     );
   }
 
@@ -133,7 +143,9 @@ class _SideBarState extends State<SideBar> {
                     padding: const EdgeInsets.only(left: 20),
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: selectedButtonIndex == 0 ? Colors.blue : Colors.white,
+                        backgroundColor: selectedButtonIndex == 0
+                            ? Colors.blue
+                            : Colors.white,
                       ),
                       onPressed: () => _onButtonPressed(0),
                       child: Row(
@@ -154,7 +166,9 @@ class _SideBarState extends State<SideBar> {
                     padding: const EdgeInsets.only(left: 20),
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: selectedButtonIndex == 1 ? Colors.blue : Colors.white,
+                        backgroundColor: selectedButtonIndex == 1
+                            ? Colors.blue
+                            : Colors.white,
                       ),
                       onPressed: () => _onButtonPressed(1),
                       child: Row(
@@ -180,7 +194,9 @@ class _SideBarState extends State<SideBar> {
             alignment: Alignment.center,
             child: IconButton(
               iconSize: 50,
-              icon: Icon(widget.isVisible ? Icons.chevron_left : Icons.chevron_right),
+              icon: Icon(
+                widget.isVisible ? Icons.chevron_left : Icons.chevron_right,
+              ),
               color: Colors.white,
               onPressed: () {
                 if (widget.isVisible) {
