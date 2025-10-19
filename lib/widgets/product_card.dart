@@ -1,15 +1,36 @@
 import 'package:flutter/material.dart';
-import 'package:untitled3/Model/products.dart';
+import 'package:untitled3/models/products.dart';
 
-class ProductCard extends StatelessWidget {
+class ProductCard extends StatefulWidget {
   final Product product;
-  final VoidCallback onAddToCart;
+  final Function(int) onAddToCart;
 
   const ProductCard({
     super.key,
     required this.product,
     required this.onAddToCart,
   });
+
+  @override
+  State<ProductCard> createState() => _ProductCardState();
+}
+
+class _ProductCardState extends State<ProductCard> {
+  int quantity = 1;
+
+  void _increaseQty() {
+    setState(() {
+      quantity++;
+    });
+  }
+
+  void _decreaseQty() {
+    if (quantity > 1) {
+      setState(() {
+        quantity--;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,15 +43,15 @@ class ProductCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             Expanded(
-              child: Image.asset(product.imagePath, fit: BoxFit.contain),
+              child: Image.asset(widget.product.imagePath, fit: BoxFit.contain),
             ),
             const SizedBox(height: 8),
             Text(
-              product.name,
+              widget.product.name,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
             ),
             Text(
-              "\$${product.price.toStringAsFixed(2)}",
+              "\$${widget.product.price.toStringAsFixed(2)}",
               style: const TextStyle(fontSize: 16, color: Colors.grey),
             ),
             const SizedBox(height: 12),
@@ -46,30 +67,35 @@ class ProductCard extends StatelessWidget {
                   child: Row(
                     children: [
                       IconButton(
-                        onPressed: () {},
+                        onPressed: _decreaseQty,
                         icon: const Icon(Icons.remove_circle_outline),
                       ),
                       Text(
-                        '0',
+                        "$quantity",
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       IconButton(
-                        onPressed: () {},
+                        onPressed: _increaseQty,
                         icon: const Icon(Icons.add_circle_outline),
                       ),
                     ],
                   ),
                 ),
-
                 const SizedBox(width: 12),
-
-                ElevatedButton.icon(
-                  onPressed: onAddToCart,
-                  icon: const Icon(Icons.add_shopping_cart),
-                  label: const Text("Add to Cart"),
+                ElevatedButton(
+                  onPressed: () => {
+                    widget.onAddToCart(quantity),
+                    setState(() {
+                      quantity = 1;
+                    }),
+                  },
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.all(12),
+                  ),
+                  child: const Icon(Icons.add_shopping_cart),
                 ),
               ],
             ),

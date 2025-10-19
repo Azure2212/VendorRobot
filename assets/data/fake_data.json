@@ -21,6 +21,24 @@
           "name": "Fanta",
           "imagePath": "assets/images/fanta.png",
           "price": 1.2
+        },
+        {
+          "id": 4,
+          "name": "Asahi Beer",
+          "imagePath": "assets/images/beer_asahi.png",
+          "price": 2.4
+        },
+        {
+          "id": 5,
+          "name": "Budweiser Beer",
+          "imagePath": "assets/images/beer_budweiser.png",
+          "price": 3.8
+        },
+        {
+          "id": 6,
+          "name": "Soju",
+          "imagePath": "assets/images/soju.png",
+          "price": 1.89
         }
       ]
     },
@@ -29,15 +47,15 @@
       "name": "Snacks",
       "products": [
         {
-          "id": 4,
-          "name": "Chips",
-          "imagePath": "assets/images/chips.png",
+          "id": 7,
+          "name": "Chuppy",
+          "imagePath": "assets/images/bido.png",
           "price": 2.0
         },
         {
-          "id": 5,
-          "name": "Popcorn",
-          "imagePath": "assets/images/popcorn.png",
+          "id": 8,
+          "name": "Cheese",
+          "imagePath": "assets/images/phomat.png",
           "price": 1.8
         }
       ]

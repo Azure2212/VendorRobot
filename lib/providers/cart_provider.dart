@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../Model/products.dart';
-import '../../../Model/cart.dart';
+import '../models/products.dart';
+import '../models/cart.dart';
 
 class CartProvider extends ChangeNotifier {
   final List<CartItem> _items = [];
@@ -11,14 +11,14 @@ class CartProvider extends ChangeNotifier {
 
   double get totalPrice => _items.fold(0, (sum, item) => sum + item.totalPrice);
 
-  void addToCart(Product product) {
+  void addToCart(Product product, {int quantity = 1}) {
     final index = _items.indexWhere(
       (e) => e.product.name == product.name && e.product.id == product.id,
     );
     if (index != -1) {
-      _items[index].quantity++;
+      _items[index].quantity += quantity;
     } else {
-      _items.add(CartItem(product: product));
+      _items.add(CartItem(product: product, quantity: quantity));
     }
     notifyListeners();
   }

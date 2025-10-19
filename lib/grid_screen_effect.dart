@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:untitled3/Enum/InteractionType.dart';
-import 'Screens/AllFaces/HappyFace.dart';
-import 'Screens/SharedComponents/sidebar.dart';
+import 'package:untitled3/enum/InteractionType.dart';
+import 'screens/AllFaces/HappyFace.dart';
+import 'widgets/sidebar.dart';
 
 class GridPage extends StatefulWidget {
   const GridPage({super.key});
@@ -26,7 +26,8 @@ class _GridPageState extends State<GridPage> {
     _timer = Timer.periodic(Duration(milliseconds: 1000), (timer) {
       setState(() {
         eyesMonthColor = (eyesMonthColor == Colors.white)
-            ? Colors.yellow // Bright pale yellow
+            ? Colors
+                  .yellow // Bright pale yellow
             : Colors.white;
       });
     });
@@ -52,7 +53,9 @@ class _GridPageState extends State<GridPage> {
           Container(
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              border: Border.all(color: HappyFace(i, j, GridPage.numberOfCell, eyesMonthColor)),
+              border: Border.all(
+                color: HappyFace(i, j, GridPage.numberOfCell, eyesMonthColor),
+              ),
               color: HappyFace(i, j, GridPage.numberOfCell, eyesMonthColor),
             ),
           ),

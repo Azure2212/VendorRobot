@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:untitled3/Enum/InteractionType.dart';
+import 'package:untitled3/enum/InteractionType.dart';
 
-import '../order_screen_page.dart';
+import '../screens/order_screen.dart';
 
 class SideBar extends StatefulWidget {
   final bool isVisible;
@@ -106,11 +106,10 @@ class _SideBarState extends State<SideBar> {
       );
     }
 
-    print("go");
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => const HomeScreen(),
+        builder: (_) => const OrderScreen(),
       ), // Replace HomeScreen with your actual widget name
     );
   }
