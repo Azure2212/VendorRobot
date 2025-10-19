@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:untitled3/Enum/InteractionType.dart';
+import 'package:untitled3/enum/InteractionType.dart';
 import 'AllFaces/HappyFace.dart';
-import 'SharedComponents/sidebar.dart';
+import '../widgets/sidebar.dart';
 
 class GridPage extends StatefulWidget {
   const GridPage({super.key});
@@ -31,9 +31,12 @@ class _GridPageState extends State<GridPage> {
           Container(
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              border: Border.all(color: HappyFace(i, j, GridPage.numberOfCell, eyes_month_color)),
+              border: Border.all(
+                color: HappyFace(i, j, GridPage.numberOfCell, eyes_month_color),
+              ),
               color: HappyFace(i, j, GridPage.numberOfCell, eyes_month_color),
-            ),),
+            ),
+          ),
         );
       }
     }

@@ -1,29 +1,60 @@
+import 'dart:async';
 import 'dart:convert';
-import 'SharedComponents/providers/cart_provider.dart';
+import 'package:untitled3/screens/cart_screen.dart';
+import 'package:untitled3/screens/grid_screen.dart';
+
+import '../providers/cart_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:provider/provider.dart';
 
-import '../Model/category.dart';
-import 'SharedComponents/category_tabs.dart';
-import 'product_card.dart';
-import 'SharedComponents/cart_screen.dart';
+import '../models/category.dart';
+import '../widgets/category_tabs.dart';
+import '../widgets/product_card.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class OrderScreen extends StatefulWidget {
+  const OrderScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<OrderScreen> createState() => _OrderScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _OrderScreenState extends State<OrderScreen> {
   List<Category> categories = [];
   int selectedIndex = 0;
+
+  Timer? _inactivityTimer;
 
   @override
   void initState() {
     super.initState();
     _loadFakeData();
+    _resetInactivityTimer();
+  }
+
+  // tranh leak nhieu lan
+  @override
+  void dispose() {
+    _inactivityTimer?.cancel();
+    super.dispose();
+  }
+
+  void _resetInactivityTimer() {
+    _inactivityTimer?.cancel();
+    _inactivityTimer = Timer(const Duration(seconds: 5), () {
+      //Bat su kien mount
+      if (mounted) {
+        debugPrint("5s inactivity detected");
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const GridPage()),
+          (route) => false,
+        );
+      }
+    });
+  }
+
+  void _onUserActivity() {
+    _resetInactivityTimer();
   }
 
   Future<void> _loadFakeData() async {
@@ -41,7 +72,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    print('here');
     final cartProvider = Provider.of<CartProvider>(context);
 
     // Nếu chưa load xong JSON
@@ -81,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 // Số lượng sản phẩm nhỏ trên icon
                 if (cartProvider.totalItems > 0)
                   Positioned(
-                    right: 6,
+                    right: 8,
                     top: 6,
                     child: Container(
                       padding: const EdgeInsets.all(4),
@@ -103,41 +133,45 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          CategoryTabs(
-            categories: categories.map((e) => e.name).toList(),
-            selectedIndex: selectedIndex,
-            onTap: (i) => setState(() => selectedIndex = i),
-          ),
-          Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                mainAxisSpacing: 24,
-                crossAxisSpacing: 24,
-                childAspectRatio: 3 / 4,
-              ),
-              itemCount: products.length,
-              itemBuilder: (context, index) {
-                final p = products[index];
-                return ProductCard(
-                  product: p,
-                  onAddToCart: () {
-                    cartProvider.addToCart(p);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('${p.name} added to cart'),
-                        duration: const Duration(seconds: 1),
-                      ),
-                    );
-                  },
-                );
-              },
+      body: Listener(
+        onPointerDown: (_) => _onUserActivity(),
+        behavior: HitTestBehavior.translucent,
+        child: Column(
+          children: [
+            CategoryTabs(
+              categories: categories.map((e) => e.name).toList(),
+              selectedIndex: selectedIndex,
+              onTap: (i) => setState(() => selectedIndex = i),
             ),
-          ),
-        ],
+            Expanded(
+              child: GridView.builder(
+                padding: const EdgeInsets.all(16),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 4,
+                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 16,
+                  childAspectRatio: 3 / 4,
+                ),
+                itemCount: products.length,
+                itemBuilder: (context, index) {
+                  final p = products[index];
+                  return ProductCard(
+                    product: p,
+                    onAddToCart: (quantity) {
+                      cartProvider.addToCart(p, quantity: quantity);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('${p.name} added to cart'),
+                          duration: const Duration(seconds: 1),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
