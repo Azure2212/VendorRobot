@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../models/products.dart';
+
 import '../models/cart.dart';
+import '../models/products.dart';
 
 class CartProvider extends ChangeNotifier {
   final List<CartItem> _items = [];
@@ -23,15 +24,17 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void removeFromCart(Product product) {
+  void removeFromCart(Product product, {bool isRemoveItem = false}) {
     final index = _items.indexWhere(
       (e) => e.product.name == product.name && e.product.id == product.id,
     );
     if (index != -1) {
-      if (_items[index].quantity > 1) {
+      if (_items[index].quantity > 1 && !isRemoveItem) {
         _items[index].quantity--;
-      } else {
+      } else if (isRemoveItem) {
         _items.removeAt(index);
+      } else {
+        print('Could not remove item at index');
       }
       notifyListeners();
     }

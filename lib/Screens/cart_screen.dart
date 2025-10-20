@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:untitled3/screens/grid_screen.dart';
+import 'package:untitled3/screens/payment_screen.dart';
 
 import '../providers/cart_provider.dart';
 import 'package:flutter/material.dart';
@@ -16,30 +17,29 @@ class CartScreen extends StatefulWidget {
 class _CartScreenState extends State<CartScreen> {
   Timer? _inactivityTimer;
 
-  // tranh leak nhieu lan
-  @override
-  void dispose() {
-    _inactivityTimer?.cancel();
-    super.dispose();
-  }
+  // @override
+  // void dispose() {
+  //   _inactivityTimer?.cancel();
+  //   super.dispose();
+  // }
 
-  void _resetInactivityTimer() {
-    _inactivityTimer?.cancel();
-    _inactivityTimer = Timer(const Duration(seconds: 30), () {
-      //Bat su kien mount
-      if (mounted) {
-        debugPrint("5s inactivity detected");
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const GridPage()),
-          (route) => false,
-        );
-      }
-    });
-  }
+  // void _resetInactivityTimer() {
+  //   _inactivityTimer?.cancel();
+  //   _inactivityTimer = Timer(const Duration(seconds: 20), () {
+  //     //Bat su kien mount
+  //     if (mounted) {
+  //       debugPrint("5s inactivity detected");
+  //       Navigator.of(context).pushAndRemoveUntil(
+  //         MaterialPageRoute(builder: (_) => const GridPage()),
+  //         (route) => false,
+  //       );
+  //     }
+  //   });
+  // }
 
-  void _onUserActivity() {
-    _resetInactivityTimer();
-  }
+  // void _onUserActivity() {
+  //   _resetInactivityTimer();
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +48,7 @@ class _CartScreenState extends State<CartScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Your cart'), centerTitle: true),
       body: Listener(
-        onPointerDown: (_) => _onUserActivity(),
+        onPointerDown: (_) => () {},
         behavior: HitTestBehavior.translucent,
         child: cartProvider.items.isEmpty
             ? const Center(
@@ -99,6 +99,23 @@ class _CartScreenState extends State<CartScreen> {
                                     cartProvider.addToCart(product);
                                   },
                                 ),
+
+                                IconButton(
+                                  onPressed: () {
+                                    cartProvider.removeFromCart(
+                                      product,
+                                      isRemoveItem: true,
+                                    );
+                                  },
+                                  icon: const Icon(
+                                    Icons.delete,
+                                    color: Colors.red,
+                                  ),
+                                  style: IconButton.styleFrom(
+                                    backgroundColor: Colors.red.shade100,
+                                    hoverColor: Colors.red.shade200,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -131,11 +148,14 @@ class _CartScreenState extends State<CartScreen> {
           ElevatedButton.icon(
             onPressed: () {
               if (cartProvider.items.isNotEmpty) {
-                _handleCheckout(cartProvider);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const PaymentScreen()),
+                );
               }
             },
             icon: const Icon(Icons.shopping_cart_checkout),
-            label: const Text('Order Here'),
+            label: const Text('Checkout'),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             ),
@@ -146,32 +166,32 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   // clear cart khi order
-  void _handleCheckout(CartProvider cartProvider) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Order confirm'),
-        content: const Text('Are you sure you want to order?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Order now'),
-          ),
-        ],
-      ),
-    );
+  // void _handleCheckout(CartProvider cartProvider) async {
+  //   final confirmed = await showDialog<bool>(
+  //     context: context,
+  //     builder: (context) => AlertDialog(
+  //       title: const Text('Order confirm'),
+  //       content: const Text('Are you sure you want to order?'),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Navigator.pop(context, false),
+  //           child: const Text('Cancel'),
+  //         ),
+  //         ElevatedButton(
+  //           onPressed: () => Navigator.pop(context, true),
+  //           child: const Text('Order now'),
+  //         ),
+  //       ],
+  //     ),
+  //   );
 
-    if (confirmed == true) {
-      cartProvider.clearCart();
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Order Successfully!')));
-      }
-    }
-  }
+  //   if (confirmed == true) {
+  //     cartProvider.clearCart();
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(
+  //         context,
+  //       ).showSnackBar(const SnackBar(content: Text('Order Successfully!')));
+  //     }
+  //   }
+  // }
 }
