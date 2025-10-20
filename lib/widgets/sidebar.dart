@@ -38,7 +38,7 @@ class _SideBarState extends State<SideBar> {
     setState(() {
       if (savedInteraction != null) {
         if (savedInteraction.contains('TOUCHSCREEN')) {
-          selectedButtonIndex = 0;
+          selectedButtonIndex = 1;
         } else if (savedInteraction.contains('VOICE')) {
           selectedButtonIndex = 1;
         } else {
@@ -54,24 +54,24 @@ class _SideBarState extends State<SideBar> {
     });
   }
 
-  @override
-  void didUpdateWidget(covariant SideBar oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    // If sidebar was just opened
-    if (!oldWidget.isVisible && widget.isVisible) {
-      _startAutoCloseTimer();
-    }
-
-    // If sidebar was just closed manually, cancel the timer
-    if (oldWidget.isVisible && !widget.isVisible) {
-      _cancelAutoCloseTimer();
-    }
-  }
+  // @override
+  // void didUpdateWidget(covariant SideBar oldWidget) {
+  //   super.didUpdateWidget(oldWidget);
+  //
+  //   // If sidebar was just opened
+  //   if (!oldWidget.isVisible && widget.isVisible) {
+  //     _startAutoCloseTimer();
+  //   }
+  //
+  //   // If sidebar was just closed manually, cancel the timer
+  //   if (oldWidget.isVisible && !widget.isVisible) {
+  //     _cancelAutoCloseTimer();
+  //   }
+  // }
 
   void _startAutoCloseTimer() {
     _autoCloseTimer?.cancel(); // cancel any existing timer
-    _autoCloseTimer = Timer(const Duration(seconds: 10), () {
+    _autoCloseTimer = Timer(const Duration(seconds: 100), () {
       // Close the sidebar after 10 seconds
       widget.onToggle();
     });
@@ -146,7 +146,7 @@ class _SideBarState extends State<SideBar> {
                             ? Colors.blue
                             : Colors.white,
                       ),
-                      onPressed: () => _onButtonPressed(0),
+                      onPressed: () => _onButtonPressed(1),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
