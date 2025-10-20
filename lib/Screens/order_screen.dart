@@ -29,33 +29,33 @@ class _OrderScreenState extends State<OrderScreen> {
   void initState() {
     super.initState();
     _loadFakeData();
-    _resetInactivityTimer();
+    // _resetInactivityTimer();
   }
 
   // tranh leak nhieu lan
-  @override
-  void dispose() {
-    _inactivityTimer?.cancel();
-    super.dispose();
-  }
+  // @override
+  // void dispose() {
+  //   _inactivityTimer?.cancel();
+  //   super.dispose();
+  // }
 
-  void _resetInactivityTimer() {
-    _inactivityTimer?.cancel();
-    _inactivityTimer = Timer(const Duration(seconds: 5), () {
-      //Bat su kien mount
-      if (mounted) {
-        debugPrint("5s inactivity detected");
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const GridPage()),
-          (route) => false,
-        );
-      }
-    });
-  }
+  // void _resetInactivityTimer() {
+  //   _inactivityTimer?.cancel();
+  //   _inactivityTimer = Timer(const Duration(seconds: 20), () {
+  //     //Bat su kien mount
+  //     if (mounted) {
+  //       debugPrint("5s inactivity detected");
+  //       Navigator.of(context).pushAndRemoveUntil(
+  //         MaterialPageRoute(builder: (_) => const GridPage()),
+  //         (route) => false,
+  //       );
+  //     }
+  //   });
+  // }
 
-  void _onUserActivity() {
-    _resetInactivityTimer();
-  }
+  // void _onUserActivity() {
+  //   _resetInactivityTimer();
+  // }
 
   Future<void> _loadFakeData() async {
     final jsonStr = await rootBundle.loadString('assets/data/fake_data.json');
@@ -134,7 +134,7 @@ class _OrderScreenState extends State<OrderScreen> {
         ],
       ),
       body: Listener(
-        onPointerDown: (_) => _onUserActivity(),
+        onPointerDown: (_) => () {},
         behavior: HitTestBehavior.translucent,
         child: Column(
           children: [
