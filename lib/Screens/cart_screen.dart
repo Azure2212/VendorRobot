@@ -25,7 +25,7 @@ class _CartScreenState extends State<CartScreen> {
 
   void _resetInactivityTimer() {
     _inactivityTimer?.cancel();
-    _inactivityTimer = Timer(const Duration(seconds: 5), () {
+    _inactivityTimer = Timer(const Duration(seconds: 30), () {
       //Bat su kien mount
       if (mounted) {
         debugPrint("5s inactivity detected");
