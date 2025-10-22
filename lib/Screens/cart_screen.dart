@@ -52,7 +52,7 @@ class _CartScreenState extends State<CartScreen> {
         behavior: HitTestBehavior.translucent,
         child: cartProvider.items.isEmpty
             ? const Center(
-                child: Text('Cart null', style: TextStyle(fontSize: 18)),
+                child: Text('You didn\'t choose anything', style: TextStyle(fontSize: 18)),
               )
             : Column(
                 children: [
