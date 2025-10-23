@@ -1,11 +1,10 @@
 import 'dart:async';
 
-import 'package:untitled3/screens/grid_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:untitled3/screens/payment_screen.dart';
 
 import '../providers/cart_provider.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -52,7 +51,10 @@ class _CartScreenState extends State<CartScreen> {
         behavior: HitTestBehavior.translucent,
         child: cartProvider.items.isEmpty
             ? const Center(
-                child: Text('You didn\'t choose anything', style: TextStyle(fontSize: 18)),
+                child: Text(
+                  'You didn\'t choose anything',
+                  style: TextStyle(fontSize: 18),
+                ),
               )
             : Column(
                 children: [

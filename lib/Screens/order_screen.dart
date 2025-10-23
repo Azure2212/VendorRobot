@@ -1,14 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:untitled3/screens/cart_screen.dart';
-import 'package:untitled3/screens/grid_screen.dart';
 
-import '../providers/cart_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:provider/provider.dart';
+import 'package:untitled3/screens/cart_screen.dart';
 
 import '../models/category.dart';
+import '../providers/cart_provider.dart';
 import '../widgets/category_tabs.dart';
 import '../widgets/product_card.dart';
 
