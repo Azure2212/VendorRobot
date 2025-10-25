@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:untitled3/enum/InteractionType.dart';
+import '../Enum/AllScreenInProject.dart';
 import 'AllFaces/HappyFace.dart';
 import '../widgets/sidebar.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 
+import 'order_screen.dart';
 class GridPage extends StatefulWidget {
   const GridPage({super.key});
 
@@ -14,6 +17,52 @@ class GridPage extends StatefulWidget {
 
 class _GridPageState extends State<GridPage> {
   bool showSidebar = false;
+  late IO.Socket socket;
+
+  @override
+  void initState() {
+    print('🟢 initState: starting socket initialization');
+    super.initState();
+    _initSocket();
+  }
+
+  void _initSocket() {
+    socket = IO.io(
+      'https://hricameratest.onrender.com',
+      IO.OptionBuilder()
+          .setTransports(['websocket'])
+          .enableReconnection()
+          .disableAutoConnect()
+          .build(),
+    );
+
+    socket.onConnect((_) {
+      print('✅ Connected to server');
+      socket.emit('join', {'room': '100'});
+    });
+
+    socket.on('TourchScreenAction', (data) {
+      // print('Received action: $data');
+      if (data['Move2Page'] == AllScreenInProject.ORDERSCREEN.toString().split('.').last) {
+        if (mounted) {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const OrderScreen()),
+          );
+        }
+      }
+    });
+
+    socket.onConnectError((err) => print('⚠️ Connect error: $err'));
+    socket.onDisconnect((_) => print('❌ Disconnected'));
+
+    socket.connect();
+  }
+
+  @override
+  void dispose() {
+    socket.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

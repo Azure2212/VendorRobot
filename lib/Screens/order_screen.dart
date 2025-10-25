@@ -6,10 +6,15 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:provider/provider.dart';
 import 'package:untitled3/screens/cart_screen.dart';
 
+import '../Enum/AllScreenInProject.dart';
 import '../models/category.dart';
 import '../providers/cart_provider.dart';
 import '../widgets/category_tabs.dart';
 import '../widgets/product_card.dart';
+
+import 'package:socket_io_client/socket_io_client.dart' as IO;
+
+import 'grid_screen.dart';
 
 class OrderScreen extends StatefulWidget {
   const OrderScreen({super.key});
@@ -21,40 +26,54 @@ class OrderScreen extends StatefulWidget {
 class _OrderScreenState extends State<OrderScreen> {
   List<Category> categories = [];
   int selectedIndex = 0;
-
+  late IO.Socket socket;
   Timer? _inactivityTimer;
 
   @override
   void initState() {
     super.initState();
     _loadFakeData();
+    _initSocket();
     // _resetInactivityTimer();
   }
 
-  // tranh leak nhieu lan
-  // @override
-  // void dispose() {
-  //   _inactivityTimer?.cancel();
-  //   super.dispose();
-  // }
+  void _initSocket() {
+    socket = IO.io(
+      'https://hricameratest.onrender.com',
+      IO.OptionBuilder()
+          .setTransports(['websocket'])
+          .enableReconnection()
+          .disableAutoConnect()
+          .build(),
+    );
 
-  // void _resetInactivityTimer() {
-  //   _inactivityTimer?.cancel();
-  //   _inactivityTimer = Timer(const Duration(seconds: 20), () {
-  //     //Bat su kien mount
-  //     if (mounted) {
-  //       debugPrint("5s inactivity detected");
-  //       Navigator.of(context).pushAndRemoveUntil(
-  //         MaterialPageRoute(builder: (_) => const GridPage()),
-  //         (route) => false,
-  //       );
-  //     }
-  //   });
-  // }
+    socket.onConnect((_) {
+      print('✅ Connected to server');
+      socket.emit('join', {'room': '100'});
+    });
 
-  // void _onUserActivity() {
-  //   _resetInactivityTimer();
-  // }
+    socket.on('TourchScreenAction', (data) {
+      // print('Received action: $data');
+      if (data['Move2Page'] == AllScreenInProject.HOMEPAGESCREEN.toString().split('.').last) {
+        if (mounted) {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const GridPage()),
+          );
+        }
+      }
+    });
+
+    socket.onConnectError((err) => print('⚠️ Connect error: $err'));
+    socket.onDisconnect((_) => print('❌ Disconnected'));
+
+    socket.connect();
+  }
+
+  @override
+  void dispose() {
+    socket.dispose();
+    super.dispose();
+  }
 
   Future<void> _loadFakeData() async {
     final jsonStr = await rootBundle.loadString('assets/data/fake_data.json');

@@ -1,0 +1,4 @@
+enum AllScreenInProject {
+  ORDERSCREEN,
+  HOMEPAGESCREEN
+}
