@@ -65,6 +65,7 @@ class _ProductCardState extends State<ProductCard> {
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
                         onPressed: _decreaseQty,

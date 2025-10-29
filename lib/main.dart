@@ -5,10 +5,11 @@ import 'package:untitled3/models/products.dart';
 import 'package:untitled3/providers/cart_provider.dart';
 import 'screens/grid_screen.dart'; // Make sure path is correct
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  // await DotEnv().load(fileName: '.env');
   await Hive.initFlutter();
 
   //Register adapter

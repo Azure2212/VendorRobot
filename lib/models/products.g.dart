@@ -21,6 +21,8 @@ class ProductAdapter extends TypeAdapter<Product> {
       name: fields[1] as String,
       imagePath: fields[2] as String,
       price: fields[3] as double,
+      quantity: fields[4] as int,
+      category: fields[5] as String,
     );
   }
 

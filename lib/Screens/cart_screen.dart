@@ -14,31 +14,6 @@ class CartScreen extends StatefulWidget {
 }
 
 class _CartScreenState extends State<CartScreen> {
-  Timer? _inactivityTimer;
-
-  // @override
-  // void dispose() {
-  //   _inactivityTimer?.cancel();
-  //   super.dispose();
-  // }
-
-  // void _resetInactivityTimer() {
-  //   _inactivityTimer?.cancel();
-  //   _inactivityTimer = Timer(const Duration(seconds: 20), () {
-  //     //Bat su kien mount
-  //     if (mounted) {
-  //       debugPrint("5s inactivity detected");
-  //       Navigator.of(context).pushAndRemoveUntil(
-  //         MaterialPageRoute(builder: (_) => const GridPage()),
-  //         (route) => false,
-  //       );
-  //     }
-  //   });
-  // }
-
-  // void _onUserActivity() {
-  //   _resetInactivityTimer();
-  // }
 
   @override
   Widget build(BuildContext context) {
