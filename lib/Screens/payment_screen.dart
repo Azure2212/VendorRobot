@@ -199,17 +199,21 @@ class _PaymentScreenState extends State<PaymentScreen> {
             },
           ),
 
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: ElevatedButton(
-                onPressed: _scrollToBottom,
-                style: ElevatedButton.styleFrom(
-                  shape: const CircleBorder(),
-                  padding: const EdgeInsets.all(16),
+          AnimatedOpacity(
+            opacity: _showScrollButton ? 1 : 0,
+            duration: const Duration(milliseconds: 300),
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 24),
+                child: ElevatedButton(
+                  onPressed: _scrollToBottom,
+                  style: ElevatedButton.styleFrom(
+                    shape: const CircleBorder(),
+                    padding: const EdgeInsets.all(16),
+                  ),
+                  child: const Icon(Icons.arrow_downward),
                 ),
-                child: const Icon(Icons.downhill_skiing_sharp),
               ),
             ),
           ),

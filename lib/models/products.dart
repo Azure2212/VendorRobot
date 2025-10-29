@@ -48,6 +48,6 @@ class Product extends HiveObject {
     'image_url': imagePath,
     'price': price,
     'quantity': quantity,
-    'category':category
+    'category': category,
   };
 }

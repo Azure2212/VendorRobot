@@ -1,12 +1,12 @@
 {
-  "categories": [
+  "products": [
     {
       "id": 1,
       "name": "Drinks",
       "products": [
         {
           "id": 1,
-          "name": "Coca-Cola",
+          "name": "Coca-Colas",
           "image_url": "assets/images/cocacola.png",
           "price": 1.5,
           "quantity": 10,

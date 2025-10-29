@@ -4,10 +4,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:provider/provider.dart';
+import 'package:untitled3/models/products.dart';
 import 'package:untitled3/screens/cart_screen.dart';
 
 import '../Enum/AllScreenInProject.dart';
-import '../models/category.dart';
 import '../providers/cart_provider.dart';
 import '../widgets/category_tabs.dart';
 import '../widgets/product_card.dart';
@@ -24,7 +24,7 @@ class OrderScreen extends StatefulWidget {
 }
 
 class _OrderScreenState extends State<OrderScreen> {
-  List<Category> categories = [];
+  List<Product> products = [];
   int selectedIndex = 0;
   late IO.Socket socket;
   Timer? _inactivityTimer;
@@ -54,11 +54,12 @@ class _OrderScreenState extends State<OrderScreen> {
 
     socket.on('TourchScreenAction', (data) {
       // print('Received action: $data');
-      if (data['Move2Page'] == AllScreenInProject.HOMEPAGESCREEN.toString().split('.').last) {
+      if (data['Move2Page'] ==
+          AllScreenInProject.HOMEPAGESCREEN.toString().split('.').last) {
         if (mounted) {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const GridPage()),
-          );
+          Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const GridPage()));
         }
       }
     });
@@ -79,12 +80,12 @@ class _OrderScreenState extends State<OrderScreen> {
     final jsonStr = await rootBundle.loadString('assets/data/fake_data.json');
     final Map<String, dynamic> data = jsonDecode(jsonStr);
 
-    final List<Category> loadedCategories = (data['categories'] as List)
-        .map((e) => Category.fromJson(e))
+    final List<Product> loadProducts = (data['products'] as List)
+        .map((e) => Product.fromJson(e))
         .toList();
 
     setState(() {
-      categories = loadedCategories;
+      products = loadProducts;
     });
   }
 
@@ -93,12 +94,12 @@ class _OrderScreenState extends State<OrderScreen> {
     final cartProvider = Provider.of<CartProvider>(context);
 
     // Nếu chưa load xong JSON
-    if (categories.isEmpty) {
+    if (this.products.isEmpty) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final currentCategory = categories[selectedIndex];
-    final products = currentCategory.products;
+    // final currentCategory = this.products[selectedIndex];
+    // final products = currentCategory;
 
     return Scaffold(
       appBar: AppBar(
@@ -129,10 +130,10 @@ class _OrderScreenState extends State<OrderScreen> {
                 // Số lượng sản phẩm nhỏ trên icon
                 if (cartProvider.totalItems > 0)
                   Positioned(
-                    right: 8,
-                    top: 6,
+                    right: 6,
+                    top: 4,
                     child: Container(
-                      padding: const EdgeInsets.all(4),
+                      padding: const EdgeInsets.all(3),
                       decoration: const BoxDecoration(
                         color: Colors.red,
                         shape: BoxShape.circle,
@@ -157,7 +158,7 @@ class _OrderScreenState extends State<OrderScreen> {
         child: Column(
           children: [
             CategoryTabs(
-              categories: categories.map((e) => e.name).toList(),
+              categories: this.products.map((e) => e.name).toList(),
               selectedIndex: selectedIndex,
               onTap: (i) => setState(() => selectedIndex = i),
             ),
