@@ -22,9 +22,9 @@ class CategoryTabs extends StatelessWidget {
         final isSelected = selectedIndex == index;
 
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
           child: ChoiceChip(
-            label: Text(label),
+            label: Text(label, style: TextStyle(fontWeight: FontWeight.bold)),
             selected: isSelected,
             onSelected: (_) => onTap(index),
             selectedColor: Theme.of(context).colorScheme.primaryContainer,

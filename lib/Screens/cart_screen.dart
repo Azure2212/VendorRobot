@@ -14,13 +14,15 @@ class CartScreen extends StatefulWidget {
 }
 
 class _CartScreenState extends State<CartScreen> {
-
   @override
   Widget build(BuildContext context) {
     final cartProvider = Provider.of<CartProvider>(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Your cart'), centerTitle: true),
+      appBar: AppBar(
+        title: const Text('Your cart', style: TextStyle(fontSize: 32)),
+        centerTitle: true,
+      ),
       body: Listener(
         onPointerDown: (_) => () {},
         behavior: HitTestBehavior.translucent,

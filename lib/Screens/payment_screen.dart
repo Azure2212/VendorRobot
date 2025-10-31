@@ -1,8 +1,5 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:untitled3/Enum/DeliveryRecordStatus.dart';
 
@@ -64,7 +61,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     super.dispose();
   }
 
-  void _handleConfirmRequest(CartProvider cartProvider) async {
+  Future<void> _handleConfirmRequest(CartProvider cartProvider) async {
     if (cartProvider.items.isEmpty) return;
     List<String> inventoryIds = [];
     List<String> quantity = [];
@@ -180,21 +177,19 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: () {
-                              _handleConfirmRequest(cartProvider);
-
                               showDialog(
                                 context: context,
                                 barrierDismissible: false,
                                 // user cannot tap outside to dismiss
-                                builder: (context) {
+                                builder: (dialogContext) {
                                   Future.delayed(
                                     const Duration(seconds: 5),
                                     () {
-                                      if (Navigator.of(context).canPop()) {
+                                      if (dialogContext.mounted) {
                                         Navigator.of(
-                                          context,
-                                        ).pop(); // close dialog
-                                        Navigator.push(
+                                          dialogContext,
+                                        ).pop(); // đóng dialog
+                                        Navigator.pushReplacement(
                                           context,
                                           MaterialPageRoute(
                                             builder: (_) => const GridPage(),
@@ -211,16 +206,21 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                     ),
                                     actions: [
                                       TextButton(
-                                        onPressed: () {
-                                          Navigator.of(
-                                            context,
-                                          ).pop(); // close dialog
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) => const GridPage(),
-                                            ),
+                                        onPressed: () async {
+                                          await _handleConfirmRequest(
+                                            cartProvider,
                                           );
+
+                                          if (dialogContext.mounted) {
+                                            Navigator.of(dialogContext).pop();
+                                            Navigator.pushReplacement(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) =>
+                                                    const GridPage(),
+                                              ),
+                                            );
+                                          }
                                         },
                                         child: const Text('OK'),
                                       ),
@@ -239,7 +239,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                            child: const Text('Confirm Booking'),
+                            child: const Text(
+                              'Confirm Booking',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                              ),
+                            ),
                           ),
                         ),
                         const SizedBox(height: 10),
