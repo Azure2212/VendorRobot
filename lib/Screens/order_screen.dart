@@ -3,6 +3,8 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:untitled3/models/products.dart';
 import 'package:untitled3/screens/cart_screen.dart';
@@ -24,7 +26,12 @@ class OrderScreen extends StatefulWidget {
 }
 
 class _OrderScreenState extends State<OrderScreen> {
+  final beUrl = dotenv.env['BE_URL'] ?? "http://10.0.2.2:8000/robots/";
+  final robotId = dotenv.env['ID_ROBOT'] ?? "1";
+
   List<Product> products = [];
+  final Map<int, String> category = {0: "BEVERAGE", 1: "SNACK"};
+  List<Product> ShowProducts = [];
   int selectedIndex = 0;
   late IO.Socket socket;
   Timer? _inactivityTimer;
@@ -80,13 +87,37 @@ class _OrderScreenState extends State<OrderScreen> {
     final jsonStr = await rootBundle.loadString('assets/data/fake_data.json');
     final Map<String, dynamic> data = jsonDecode(jsonStr);
 
-    final List<Product> loadProducts = (data['products'] as List)
+    final List<Product> loadProducts = (data['inventory_items'] as List)
         .map((e) => Product.fromJson(e))
         .toList();
 
     setState(() {
       products = loadProducts;
     });
+  }
+
+  //real app use this function
+  Future<void> _loadFakeData2() async {
+    try {
+      // Fetch robot data from API
+      final response = await http.get(Uri.parse("$beUrl/robots/$robotId"));
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+
+        // Extract the inventory_items list
+        final List<Product> loadProducts = (data['inventory_items'] as List)
+            .map((e) => Product.fromJson(e))
+            .toList();
+
+        setState(() {
+          products = loadProducts;
+        });
+      } else {
+        print('Failed to load data from API: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error loading data: $e');
+    }
   }
 
   @override
@@ -158,7 +189,7 @@ class _OrderScreenState extends State<OrderScreen> {
         child: Column(
           children: [
             CategoryTabs(
-              categories: this.products.map((e) => e.name).toList(),
+              categories: category.values.toList(),
               selectedIndex: selectedIndex,
               onTap: (i) => setState(() => selectedIndex = i),
             ),
@@ -171,9 +202,15 @@ class _OrderScreenState extends State<OrderScreen> {
                   crossAxisSpacing: 16,
                   childAspectRatio: 3 / 4,
                 ),
-                itemCount: products.length,
+                // itemCount: products.length,
+                itemCount: products
+                    .where((p) => p.category == category[selectedIndex])
+                    .length,
                 itemBuilder: (context, index) {
-                  final p = products[index];
+                  final filteredProducts = products
+                      .where((p) => p.category == category[selectedIndex])
+                      .toList();
+                  final p = filteredProducts[index];
                   return ProductCard(
                     product: p,
                     onAddToCart: (quantity) {

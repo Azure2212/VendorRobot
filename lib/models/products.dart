@@ -35,7 +35,7 @@ class Product extends HiveObject {
     return Product(
       id: json['id'],
       name: json['name'],
-      imagePath: json['image_url'],
+      imagePath: json['image_url'] ?? "assets/images/cocacola.png",
       price: (json['price'] as num).toDouble(),
       quantity: json['quantity'],
       category: json['category'],

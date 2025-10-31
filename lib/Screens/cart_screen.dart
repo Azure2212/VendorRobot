@@ -46,7 +46,7 @@ class _CartScreenState extends State<CartScreen> {
                             vertical: 6,
                           ),
                           child: ListTile(
-                            leading: Image.asset(
+                            leading: Image.network(
                               product.imagePath,
                               width: 100,
                               height: 100,

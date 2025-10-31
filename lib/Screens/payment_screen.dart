@@ -1,6 +1,13 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
+import 'package:untitled3/Enum/DeliveryRecordStatus.dart';
+
+import '../models/DeliveryRecord.dart';
+import '../models/cart.dart';
 import '../providers/cart_provider.dart';
 import 'grid_screen.dart';
 
@@ -17,6 +24,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
     'Classroom 205',
     'Classroom 207',
   ];
+
+  final beUrl = dotenv.env['BE_URL'] ?? "http://10.0.2.2:8000/";
+  final robotId = dotenv.env['ID_ROBOT'] ?? "1";
 
   String selectedSummary = 'Classroom 207';
 
@@ -55,32 +65,48 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   void _handleConfirmRequest(CartProvider cartProvider) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Request Confirm Order'),
-        content: Text('Are you sure you want to order with $selectedSummary ?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Order now'),
-          ),
-        ],
-      ),
+    if (cartProvider.items.isEmpty) return;
+    List<String> inventoryIds = [];
+    List<String> quantity = [];
+
+    for (CartItem item in cartProvider.items) {
+      inventoryIds.add(item.product.id.toString());
+      quantity.add(item.quantity.toString());
+    }
+
+    DeliveryRecord record = DeliveryRecord(
+      robotId: robotId.toString(),
+      address: selectedSummary,
+      status: DeliveryRecordStatus.WAITING.toString().split('.').last,
+      message: "Created successful!",
+      inventoryIds: inventoryIds.join(', '),
+      quantity: quantity.join(', '),
+      createdAt: DateTime.now(),
+      lastUpdatedAt: DateTime.now(),
     );
 
-    if (confirmed == true) {
-      cartProvider.clearCart();
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Payment Successfully!')));
-      }
-    }
+    // try {
+    //   print(jsonEncode(record.toJson()));
+    //   final response = await http.post(
+    //     Uri.parse("$beUrl/deliveryRecord/"),
+    //     headers: {
+    //       "Content-Type": "application/json",
+    //     },
+    //     body: jsonEncode(record.toJson()), // serialize your DeliveryRecord
+    //   );
+    //
+    //   if (response.statusCode == 200 || response.statusCode == 201) {
+    //     print("Delivery record sent successfully!");
+    //     print(response.body);
+    //   } else {
+    //     print("Failed to send delivery record: ${response.statusCode}");
+    //     print(response.body);
+    //   }
+    // } catch (e) {
+    //   print("Error sending delivery record: $e");
+    // }
+
+    cartProvider.clearCart();
   }
 
   @override
@@ -155,11 +181,52 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           child: ElevatedButton(
                             onPressed: () {
                               _handleConfirmRequest(cartProvider);
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const GridPage(),
-                                ),
+
+                              showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                // user cannot tap outside to dismiss
+                                builder: (context) {
+                                  Future.delayed(
+                                    const Duration(seconds: 5),
+                                    () {
+                                      if (Navigator.of(context).canPop()) {
+                                        Navigator.of(
+                                          context,
+                                        ).pop(); // close dialog
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => const GridPage(),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  );
+
+                                  return AlertDialog(
+                                    title: const Text('Booking Confirmed'),
+                                    content: const Text(
+                                      'Thank you for your booking, products will transfer to your address soon',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.of(
+                                            context,
+                                          ).pop(); // close dialog
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => const GridPage(),
+                                            ),
+                                          );
+                                        },
+                                        child: const Text('OK'),
+                                      ),
+                                    ],
+                                  );
+                                },
                               );
                             },
                             style: ElevatedButton.styleFrom(
@@ -169,17 +236,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
                               ),
                               backgroundColor: Colors.redAccent,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                            child: const Text(
-                              'Confirm Request',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
+                            child: const Text('Confirm Booking'),
                           ),
                         ),
                         const SizedBox(height: 10),

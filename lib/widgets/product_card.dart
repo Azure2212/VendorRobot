@@ -43,7 +43,7 @@ class _ProductCardState extends State<ProductCard> {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             Expanded(
-              child: Image.asset(widget.product.imagePath, fit: BoxFit.contain),
+              child: Image.network(widget.product.imagePath, fit: BoxFit.contain),
             ),
             const SizedBox(height: 8),
             Text(
