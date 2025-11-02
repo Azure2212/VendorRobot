@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:untitled3/enum/InteractionType.dart';
 
+import '../Services/ControlCamera.dart';
 import '../screens/order_screen.dart';
 
 class SideBar extends StatefulWidget {
@@ -91,6 +93,7 @@ class _SideBarState extends State<SideBar> {
   void _onButtonPressed(int index) async {
     setState(() {
       selectedButtonIndex = index;
+      ControlCamera.callCameraAPI(action: 'start', IDDeliveryRecord: "None");
     });
 
     final prefs = await SharedPreferences.getInstance();

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:untitled3/enum/InteractionType.dart';
 import '../Enum/AllScreenInProject.dart';
 import 'AllFaces/HappyFace.dart';
 import '../widgets/sidebar.dart';
+import '../Services/ControlCamera.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 
 import 'order_screen.dart';
@@ -24,6 +26,7 @@ class _GridPageState extends State<GridPage> {
     print('🟢 initState: starting socket initialization');
     super.initState();
     _initSocket();
+    ControlCamera.callCameraAPI(action: 'stop', IDDeliveryRecord: "None");
   }
 
   void _initSocket() {

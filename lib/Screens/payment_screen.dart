@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:untitled3/Enum/DeliveryRecordStatus.dart';
+import 'package:untitled3/Services/DeliveryRecordService.dart';
 
+import '../Services/ControlCamera.dart';
 import '../models/DeliveryRecord.dart';
 import '../models/cart.dart';
 import '../providers/cart_provider.dart';
@@ -102,7 +104,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
     // } catch (e) {
     //   print("Error sending delivery record: $e");
     // }
-
+    // List<DeliveryRecord> allDeliveryRecord = await DeliveryRecordService.getAllRecordByRobotID();
+    // print(allDeliveryRecord.length);
+    ControlCamera.callCameraAPI(action: 'stop', IDDeliveryRecord: '1');
     cartProvider.clearCart();
   }
 
