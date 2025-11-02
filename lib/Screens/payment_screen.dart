@@ -183,12 +183,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                 // user cannot tap outside to dismiss
                                 builder: (dialogContext) {
                                   Future.delayed(
-                                    const Duration(seconds: 5),
-                                    () {
+                                    const Duration(seconds: 5), () async {
+                                      await _handleConfirmRequest(cartProvider);
                                       if (dialogContext.mounted) {
                                         Navigator.of(
                                           dialogContext,
-                                        ).pop(); // đóng dialog
+                                        ).pop();
                                         Navigator.pushReplacement(
                                           context,
                                           MaterialPageRoute(
@@ -205,25 +205,25 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                       'Thank you for your booking, products will transfer to your address soon',
                                     ),
                                     actions: [
-                                      TextButton(
-                                        onPressed: () async {
-                                          await _handleConfirmRequest(
-                                            cartProvider,
-                                          );
-
-                                          if (dialogContext.mounted) {
-                                            Navigator.of(dialogContext).pop();
-                                            Navigator.pushReplacement(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (_) =>
-                                                    const GridPage(),
-                                              ),
-                                            );
-                                          }
-                                        },
-                                        child: const Text('OK'),
-                                      ),
+                                      // TextButton(
+                                      //   onPressed: () async {
+                                      //     await _handleConfirmRequest(
+                                      //       cartProvider,
+                                      //     );
+                                      //
+                                      //     if (dialogContext.mounted) {
+                                      //       Navigator.of(dialogContext).pop();
+                                      //       Navigator.pushReplacement(
+                                      //         context,
+                                      //         MaterialPageRoute(
+                                      //           builder: (_) =>
+                                      //               const GridPage(),
+                                      //         ),
+                                      //       );
+                                      //     }
+                                      //   },
+                                      //   child: const Text('OK'),
+                                      // ),
                                     ],
                                   );
                                 },
