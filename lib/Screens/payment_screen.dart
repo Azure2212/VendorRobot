@@ -187,7 +187,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                 // user cannot tap outside to dismiss
                                 builder: (dialogContext) {
                                   Future.delayed(
-                                    const Duration(seconds: 5), () async {
+                                    const Duration(seconds: 1), () async {
                                       await _handleConfirmRequest(cartProvider);
                                       if (dialogContext.mounted) {
                                         Navigator.of(
