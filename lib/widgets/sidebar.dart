@@ -93,7 +93,6 @@ class _SideBarState extends State<SideBar> {
   void _onButtonPressed(int index) async {
     setState(() {
       selectedButtonIndex = index;
-      ControlCamera.callCameraAPI(action: 'start', IDDeliveryRecord: "None");
     });
 
     final prefs = await SharedPreferences.getInstance();
@@ -109,7 +108,7 @@ class _SideBarState extends State<SideBar> {
       );
     }
 
-    Navigator.push(
+    Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (_) => const OrderScreen(),

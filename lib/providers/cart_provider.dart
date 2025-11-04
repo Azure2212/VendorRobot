@@ -42,6 +42,35 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateQuantity(
+      Product product,
+      int newQuantity,
+      ) async {
+    final box = Hive.box<CartItem>(_boxName);
+
+    // Find the item in the cart
+    final index = _items.indexWhere(
+          (e) => e.product.name == product.name && e.product.id == product.id,
+    );
+
+    if (index != -1) {
+      final item = _items[index];
+
+      if (newQuantity > 0) {
+        // Update quantity
+        item.quantity = newQuantity;
+        await item.save();
+      } else {
+        // If newQuantity is 0 or less, remove the item
+        await item.delete();
+        _items.removeAt(index);
+      }
+
+      notifyListeners();
+    }
+  }
+
+
   Future<void> removeFromCart(
     Product product, {
     bool isRemoveItem = false,

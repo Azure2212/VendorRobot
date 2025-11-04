@@ -1,13 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
+import 'package:untitled3/Screens/cart_screen.dart';
+import 'package:untitled3/Screens/payment_screen.dart';
 import 'package:untitled3/enum/InteractionType.dart';
 import '../Enum/AllScreenInProject.dart';
+import '../Services/ProductService.dart';
+import '../models/cart.dart';
+import '../models/products.dart';
+import '../providers/cart_provider.dart';
 import 'AllFaces/HappyFace.dart';
 import '../widgets/sidebar.dart';
 import '../Services/ControlCamera.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 
 import 'order_screen.dart';
+
 class GridPage extends StatefulWidget {
   const GridPage({super.key});
 
@@ -20,6 +29,7 @@ class GridPage extends StatefulWidget {
 class _GridPageState extends State<GridPage> {
   bool showSidebar = false;
   late IO.Socket socket;
+  final robotId = dotenv.env['ID_ROBOT'] ?? "1";
 
   @override
   void initState() {
@@ -27,6 +37,8 @@ class _GridPageState extends State<GridPage> {
     super.initState();
     _initSocket();
     ControlCamera.callCameraAPI(action: 'stop', IDDeliveryRecord: "None");
+    // final cartProvider = Provider.of<CartProvider>(context);
+    // cartProvider.clearCart();
   }
 
   void _initSocket() {
@@ -41,15 +53,37 @@ class _GridPageState extends State<GridPage> {
 
     socket.onConnect((_) {
       print('✅ Connected to server');
-      socket.emit('join', {'room': '100'});
+      socket.emit('join', {'room': robotId});
     });
 
-    socket.on('TourchScreenAction', (data) {
+    socket.on('TourchScreenAction', (data) async {
       // print('Received action: $data');
-      if (data['Move2Page'] == AllScreenInProject.ORDERSCREEN.toString().split('.').last) {
+      if (data['Move2Page'] ==
+          AllScreenInProject.ORDERSCREEN.toString().split('.').last) {
         if (mounted) {
-          Navigator.of(context).push(
+          socket.off('TourchScreenAction');
+          Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const OrderScreen()),
+          );
+        }
+        // }else if (data['Move2Page'] == AllScreenInProject.HOMEPAGESCREEN.toString().split('.').last) {
+        //   if (mounted) {
+        //     Navigator.of(context).pushReplacement(
+        //       MaterialPageRoute(builder: (_) => const GridPage()),
+        //     );
+        //   }
+      } else if (data['Move2Page'] ==
+          AllScreenInProject.CARTSCREEN.toString().split('.').last) {
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const CartScreen()),
+          );
+        }
+      } else if (data['Move2Page'] ==
+          AllScreenInProject.PAYMENTSCREEN.toString().split('.').last) {
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const PaymentScreen()),
           );
         }
       }
@@ -63,12 +97,13 @@ class _GridPageState extends State<GridPage> {
 
   @override
   void dispose() {
-    socket.dispose();
+    // socket.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+
     final size = MediaQuery.of(context).size;
     final cellWidth = size.width / GridPage.numberOfCell;
     final cellHeight = size.height / GridPage.numberOfCell;

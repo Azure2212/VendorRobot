@@ -6,10 +6,13 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import 'package:untitled3/Screens/payment_screen.dart';
 import 'package:untitled3/models/products.dart';
 import 'package:untitled3/screens/cart_screen.dart';
 
 import '../Enum/AllScreenInProject.dart';
+import '../Services/ControlCamera.dart';
+import '../models/cart.dart';
 import '../providers/cart_provider.dart';
 import '../widgets/category_tabs.dart';
 import '../widgets/product_card.dart';
@@ -39,9 +42,45 @@ class _OrderScreenState extends State<OrderScreen> {
   @override
   void initState() {
     super.initState();
+    ControlCamera.callCameraAPI(action: 'start', IDDeliveryRecord: "None");
     _loadFakeData();
     _initSocket();
-    // _resetInactivityTimer();
+    _startInactivityTimer();
+  }
+
+  void _startInactivityTimer() {
+
+    _inactivityTimer?.cancel();
+
+    _inactivityTimer = Timer(const Duration(seconds: 5), () async {
+      if (!mounted) return;
+
+      // Show a blocking loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false, // prevents user from closing it
+        builder: (context) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        },
+      );
+
+      // Add a short delay to let the loading show before navigating
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (mounted) {
+        final cartProvider = Provider.of<CartProvider>(context, listen: false);
+        cartProvider.clearCart();
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const GridPage()),
+        );
+      }
+    });
+  }
+
+  void _resetTimer() {
+    _startInactivityTimer();
   }
 
   void _initSocket() {
@@ -56,7 +95,7 @@ class _OrderScreenState extends State<OrderScreen> {
 
     socket.onConnect((_) {
       print('✅ Connected to server');
-      socket.emit('join', {'room': '100'});
+      socket.emit('join', {'room': robotId});
     });
 
     socket.on('TourchScreenAction', (data) {
@@ -64,9 +103,24 @@ class _OrderScreenState extends State<OrderScreen> {
       if (data['Move2Page'] ==
           AllScreenInProject.HOMEPAGESCREEN.toString().split('.').last) {
         if (mounted) {
-          Navigator.of(
-            context,
-          ).push(MaterialPageRoute(builder: (_) => const GridPage()));
+          socket.off('TourchScreenAction');
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const GridPage()),
+          );
+        }
+      } else if (data['Move2Page'] ==
+          AllScreenInProject.CARTSCREEN.toString().split('.').last) {
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const CartScreen()),
+          );
+        }
+      } else if (data['Move2Page'] ==
+          AllScreenInProject.PAYMENTSCREEN.toString().split('.').last) {
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const PaymentScreen()),
+          );
         }
       }
     });
@@ -79,8 +133,9 @@ class _OrderScreenState extends State<OrderScreen> {
 
   @override
   void dispose() {
-    socket.dispose();
+    // socket.dispose();
     super.dispose();
+    _inactivityTimer?.cancel();
   }
 
   Future<void> _loadFakeData() async {
@@ -132,12 +187,17 @@ class _OrderScreenState extends State<OrderScreen> {
     // final currentCategory = this.products[selectedIndex];
     // final products = currentCategory;
 
-    return Scaffold(
+    return GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: _resetTimer,
+        onPanDown: (_) => _resetTimer(),
+        child:  Scaffold(
       appBar: AppBar(
         title: const Text(
           "Choose Food",
           style: TextStyle(fontWeight: FontWeight.w600),
         ),
+        centerTitle: true,
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
@@ -146,7 +206,7 @@ class _OrderScreenState extends State<OrderScreen> {
               children: [
                 ElevatedButton.icon(
                   onPressed: () {
-                    Navigator.push(
+                    Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(builder: (_) => const CartScreen()),
                     );
@@ -229,6 +289,6 @@ class _OrderScreenState extends State<OrderScreen> {
           ],
         ),
       ),
-    );
+    ),);
   }
 }

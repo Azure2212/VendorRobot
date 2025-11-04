@@ -1,10 +1,18 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:untitled3/screens/payment_screen.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 
+import '../Enum/AllScreenInProject.dart';
+import '../Services/ProductService.dart';
+import '../models/cart.dart';
+import '../models/products.dart';
 import '../providers/cart_provider.dart';
+import 'grid_screen.dart';
+import 'order_screen.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -14,97 +22,263 @@ class CartScreen extends StatefulWidget {
 }
 
 class _CartScreenState extends State<CartScreen> {
+  final robotId = dotenv.env['ID_ROBOT'] ?? "1";
+  late IO.Socket socket;
+  Timer? _inactivityTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _initSocket();
+    _startInactivityTimer();
+  }
+
+  void _startInactivityTimer() {
+    _inactivityTimer?.cancel();
+
+    _inactivityTimer = Timer(const Duration(seconds: 30), () async {
+      if (!mounted) return;
+
+      // Show a blocking loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false, // prevents user from closing it
+        builder: (context) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        },
+      );
+
+      // Add a short delay to let the loading show before navigating
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (mounted) {
+        final cartProvider = Provider.of<CartProvider>(context, listen: false);
+        cartProvider.clearCart();
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const GridPage()),
+        );
+      }
+    });
+  }
+
+  void _resetTimer() {
+    _startInactivityTimer();
+  }
+
+  void _initSocket() {
+    socket = IO.io(
+      'https://hricameratest.onrender.com',
+      IO.OptionBuilder()
+          .setTransports(['websocket'])
+          .enableReconnection()
+          .disableAutoConnect()
+          .build(),
+    );
+
+    socket.onConnect((_) {
+      print('✅ Connected to server');
+      socket.emit('join', {'room': robotId});
+    });
+
+    final cartProvider = Provider.of<CartProvider>(context, listen: false);
+    socket.on('TourchScreenAction', (data) async {
+      // print('Received action: $data');
+
+      if (data['action'] == 'removeAll') {
+        if (!mounted) return;
+        cartProvider.clearCart();
+      } else if (data['value'] != null) {
+        List<String> productNames = List<String>.from(data['value']['name']);
+        List<int> quantities = List<int>.from(data['value']['quantity']);
+        for (int i = 0; i < productNames.length; i++) {
+          String name = productNames[i];
+          if (data['action'] == 'update') {
+            for (CartItem item in cartProvider.items) {
+              if (item.product.name == name) {
+                // cartProvider.removeFromCart(item.product);
+                if (quantities[i] > 0)
+                  cartProvider.updateQuantity(item.product, quantities[i]);
+                else
+                  cartProvider.removeFromCart(item.product);
+              }
+            }
+          } else {
+            // data['action'] == 'add'
+            List<Product> products = await ProductService.fetchProducts();
+            for (Product p in products) {
+              if (p.name == name) {
+                cartProvider.addToCart(p, quantity: quantities[i]);
+              }
+            }
+          }
+        }
+      } else if (data['Move2Page'] ==
+          AllScreenInProject.ORDERSCREEN.toString().split('.').last) {
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const OrderScreen()),
+          );
+        }
+      } else if (data['Move2Page'] ==
+          AllScreenInProject.HOMEPAGESCREEN.toString().split('.').last) {
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const GridPage()),
+          );
+        }
+        // }else if (data['Move2Page'] == AllScreenInProject.CARTSCREEN.toString().split('.').last) {
+        //   if (mounted) {
+        //     Navigator.of(context).pushReplacement(
+        //       MaterialPageRoute(builder: (_) => const CartScreen()),
+        //     );
+        //   }
+      } else if (data['Move2Page'] ==
+          AllScreenInProject.PAYMENTSCREEN.toString().split('.').last) {
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const PaymentScreen()),
+          );
+        }
+      }
+    });
+
+    socket.onConnectError((err) => print('⚠️ Connect error: $err'));
+    socket.onDisconnect((_) => print('❌ Disconnected'));
+
+    socket.connect();
+  }
+
+  @override
+  void dispose() {
+    // socket.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final cartProvider = Provider.of<CartProvider>(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Your cart', style: TextStyle(fontSize: 32)),
-        centerTitle: true,
-      ),
-      body: Listener(
-        onPointerDown: (_) => () {},
-        behavior: HitTestBehavior.translucent,
-        child: cartProvider.items.isEmpty
-            ? const Center(
-                child: Text(
-                  'You didn\'t choose anything',
-                  style: TextStyle(fontSize: 18),
-                ),
-              )
-            : Column(
-                children: [
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: cartProvider.items.length,
-                      itemBuilder: (context, index) {
-                        final cartItem = cartProvider.items[index];
-                        final product = cartItem.product;
-
-                        return Card(
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          child: ListTile(
-                            leading: Image.network(
-                              product.imagePath,
-                              width: 100,
-                              height: 100,
-                              fit: BoxFit.contain,
-                            ),
-                            title: Text(product.name),
-                            subtitle: Text(
-                              '\$${product.price.toStringAsFixed(2)}',
-                              style: const TextStyle(color: Colors.grey),
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.remove_circle_outline),
-                                  onPressed: () {
-                                    cartProvider.removeFromCart(product);
-                                  },
-                                ),
-                                Text(
-                                  '${cartItem.quantity}',
-                                  style: const TextStyle(fontSize: 16),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.add_circle_outline),
-                                  onPressed: () {
-                                    cartProvider.addToCart(product);
-                                  },
-                                ),
-
-                                IconButton(
-                                  onPressed: () {
-                                    cartProvider.removeFromCart(
-                                      product,
-                                      isRemoveItem: true,
-                                    );
-                                  },
-                                  icon: const Icon(
-                                    Icons.delete,
-                                    color: Colors.red,
-                                  ),
-                                  style: IconButton.styleFrom(
-                                    backgroundColor: Colors.red.shade100,
-                                    hoverColor: Colors.red.shade200,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  _buildBottomBar(cartProvider),
-                ],
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: _resetTimer,
+      onPanDown: (_) => _resetTimer(),
+      child: Scaffold(
+        appBar: AppBar(
+          leadingWidth: 80, // make space for bigger button
+          leading: Padding(
+            padding: const EdgeInsets.only(left: 12.0),
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (_) => const OrderScreen()),
+                );
+              },
+              icon: const Icon(Icons.arrow_back, size: 28), // bigger icon
+              label: const Text(
+                "",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
               ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
+              ),
+            ),
+          ),
+          title: const Text('Your cart', style: TextStyle(fontSize: 32)),
+          centerTitle: true,
+        ),
+        body: Listener(
+          onPointerDown: (_) => () {},
+          behavior: HitTestBehavior.translucent,
+          child: cartProvider.items.isEmpty
+              ? const Center(
+                  child: Text(
+                    'You didn\'t choose anything',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                )
+              : Column(
+                  children: [
+                    SizedBox(height: 20),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: cartProvider.items.length,
+                        itemBuilder: (context, index) {
+                          final cartItem = cartProvider.items[index];
+                          final product = cartItem.product;
+
+                          return Card(
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            child: ListTile(
+                              leading: Image.network(
+                                product.imagePath,
+                                width: 100,
+                                height: 100,
+                                fit: BoxFit.contain,
+                              ),
+                              title: Text(product.name),
+                              subtitle: Text(
+                                '\$${product.price.toStringAsFixed(2)}',
+                                style: const TextStyle(color: Colors.grey),
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.remove_circle_outline,
+                                    ),
+                                    onPressed: () {
+                                      cartProvider.removeFromCart(product);
+                                    },
+                                  ),
+                                  Text(
+                                    '${cartItem.quantity}',
+                                    style: const TextStyle(fontSize: 16),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.add_circle_outline),
+                                    onPressed: () {
+                                      cartProvider.addToCart(product);
+                                    },
+                                  ),
+
+                                  IconButton(
+                                    onPressed: () {
+                                      cartProvider.removeFromCart(
+                                        product,
+                                        isRemoveItem: true,
+                                      );
+                                    },
+                                    icon: const Icon(
+                                      Icons.delete,
+                                      color: Colors.red,
+                                    ),
+                                    style: IconButton.styleFrom(
+                                      backgroundColor: Colors.red.shade100,
+                                      hoverColor: Colors.red.shade200,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    _buildBottomBar(cartProvider),
+                  ],
+                ),
+        ),
       ),
     );
   }
@@ -127,7 +301,7 @@ class _CartScreenState extends State<CartScreen> {
           ElevatedButton.icon(
             onPressed: () {
               if (cartProvider.items.isNotEmpty) {
-                Navigator.push(
+                Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (_) => const PaymentScreen()),
                 );
