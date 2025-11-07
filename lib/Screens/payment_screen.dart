@@ -52,16 +52,35 @@ class _PaymentScreenState extends State<PaymentScreen> {
       // Show a blocking loading dialog
       showDialog(
         context: context,
-        barrierDismissible: false, // prevents user from closing it
+        barrierDismissible: false,
         builder: (context) {
-          return const Center(
-            child: CircularProgressIndicator(),
+          return WillPopScope(
+            onWillPop: () async => false, // disable back button
+            child: const AlertDialog(
+              backgroundColor: Colors.white,
+              title: Text(
+                "System Restarting",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "Please wait a moment, the system is restarting...",
+                    style: TextStyle(fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 20),
+                  CircularProgressIndicator(),
+                ],
+              ),
+            ),
           );
         },
       );
 
-      // Add a short delay to let the loading show before navigating
-      await Future.delayed(const Duration(seconds: 1));
+      // ✅ Give UI time to render the dialog first
+      await Future.delayed(const Duration(milliseconds: 100));
 
       if (mounted) {
         final cartProvider = Provider.of<CartProvider>(context, listen: false);
@@ -97,8 +116,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
       if (data['Move2Page'] ==
           AllScreenInProject.ORDERSCREEN.toString().split('.').last) {
         if (mounted) {
+          final int typeProduct = data['value'] != null ? data['value'] : 0;
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const OrderScreen()),
+            MaterialPageRoute(builder: (_) => OrderScreen(typeProduct: typeProduct)),
           );
         }
       } else if (data['Move2Page'] ==
@@ -115,13 +135,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
             MaterialPageRoute(builder: (_) => const CartScreen()),
           );
         }
-        // } else if (data['Move2Page'] ==
-        //     AllScreenInProject.PAYMENTSCREEN.toString().split('.').last) {
-        //   if (mounted) {
-        //     Navigator.of(context).pushReplacement(
-        //       MaterialPageRoute(builder: (_) => const PaymentScreen()),
-        //     );
-        //   }
       }
     });
 

@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:untitled3/screens/payment_screen.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 
+import '../Enum/AllActionInProject.dart';
 import '../Enum/AllScreenInProject.dart';
 import '../Services/ProductService.dart';
 import '../models/cart.dart';
@@ -40,25 +41,63 @@ class _CartScreenState extends State<CartScreen> {
       if (!mounted) return;
 
       // Show a blocking loading dialog
+      /*showDialog(
+        context: context,
+        barrierDismissible: false, // prevent user from closing it
+        builder: (context) {
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            title: const Text(
+              "System Restarting",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            content: const Text(
+              "Please wait a moment, the system is restarting...",
+              style: TextStyle(fontSize: 16),
+            ),
+          );
+        },
+      );*/
       showDialog(
         context: context,
-        barrierDismissible: false, // prevents user from closing it
+        barrierDismissible: false,
         builder: (context) {
-          return const Center(
-            child: CircularProgressIndicator(),
+          return WillPopScope(
+            onWillPop: () async => false, // disable back button
+            child: const AlertDialog(
+              backgroundColor: Colors.white,
+              title: Text(
+                "System Restarting",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "Please wait a moment, the system is restarting...",
+                    style: TextStyle(fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 20),
+                  CircularProgressIndicator(),
+                ],
+              ),
+            ),
           );
         },
       );
 
+      // ✅ Give UI time to render the dialog first
+      await Future.delayed(const Duration(milliseconds: 100));
       // Add a short delay to let the loading show before navigating
-      await Future.delayed(const Duration(seconds: 1));
+      //await Future.delayed(const Duration(seconds: 1));
 
       if (mounted) {
         final cartProvider = Provider.of<CartProvider>(context, listen: false);
         cartProvider.clearCart();
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const GridPage()),
-        );
+        Navigator.of(
+          context,
+        ).pushReplacement(MaterialPageRoute(builder: (_) => const GridPage()));
       }
     });
   }
@@ -84,62 +123,94 @@ class _CartScreenState extends State<CartScreen> {
 
     final cartProvider = Provider.of<CartProvider>(context, listen: false);
     socket.on('TourchScreenAction', (data) async {
-      // print('Received action: $data');
-
-      if (data['action'] == 'removeAll') {
+      if (data['action'] ==
+          Allactioninproject.REMOVE.toString().split('.').last) {
         if (!mounted) return;
         cartProvider.clearCart();
-      } else if (data['value'] != null) {
+      } else if (data['action'] ==
+          Allactioninproject.ADD.toString().split('.').last) {
         List<String> productNames = List<String>.from(data['value']['name']);
         List<int> quantities = List<int>.from(data['value']['quantity']);
+
         for (int i = 0; i < productNames.length; i++) {
           String name = productNames[i];
-          if (data['action'] == 'update') {
-            for (CartItem item in cartProvider.items) {
-              if (item.product.name == name) {
-                // cartProvider.removeFromCart(item.product);
-                if (quantities[i] > 0)
-                  cartProvider.updateQuantity(item.product, quantities[i]);
-                else
-                  cartProvider.removeFromCart(item.product);
+          bool updateActivated = false;
+
+          for (CartItem item in cartProvider.items) {
+            if (item.product.name == name) {
+              // cartProvider.removeFromCart(item.product);
+              if (quantities[i] > 0) {
+                cartProvider.updateQuantity(
+                  item.product,
+                  item.quantity + quantities[i],
+                );
+              } else {
+                cartProvider.removeFromCart(item.product);
               }
+              updateActivated = true;
             }
-          } else {
-            // data['action'] == 'add'
+          }
+
+          if (updateActivated == false) {
             List<Product> products = await ProductService.fetchProducts();
             for (Product p in products) {
-              if (p.name == name) {
+              if (p.name == name && quantities[i] > 0) {
+                print(quantities[i]);
+
                 cartProvider.addToCart(p, quantity: quantities[i]);
+                break;
               }
             }
           }
         }
-      } else if (data['Move2Page'] ==
-          AllScreenInProject.ORDERSCREEN.toString().split('.').last) {
-        if (mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const OrderScreen()),
-          );
+      } else if (data['action'] ==
+          Allactioninproject.UPDATE.toString().split('.').last) {
+        List<String> productNames = List<String>.from(data['value']['name']);
+        List<int> quantities = List<int>.from(data['value']['quantity']);
+        for (int i = 0; i < productNames.length; i++) {
+          String name = productNames[i];
+          for (CartItem item in cartProvider.items) {
+            if (item.product.name == name) {
+              // cartProvider.removeFromCart(item.product);
+              if (quantities[i] > 0)
+                cartProvider.updateQuantity(item.product, quantities[i]);
+              else
+                cartProvider.removeFromCart(item.product);
+            }
+          }
         }
-      } else if (data['Move2Page'] ==
-          AllScreenInProject.HOMEPAGESCREEN.toString().split('.').last) {
-        if (mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const GridPage()),
-          );
-        }
-        // }else if (data['Move2Page'] == AllScreenInProject.CARTSCREEN.toString().split('.').last) {
-        //   if (mounted) {
-        //     Navigator.of(context).pushReplacement(
-        //       MaterialPageRoute(builder: (_) => const CartScreen()),
-        //     );
-        //   }
-      } else if (data['Move2Page'] ==
-          AllScreenInProject.PAYMENTSCREEN.toString().split('.').last) {
-        if (mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const PaymentScreen()),
-          );
+      } else if (data['action'] ==
+          Allactioninproject.MOVE.toString().split('.').last) {
+
+        socket.off('TourchScreenAction');
+        socket.off('connect');
+        socket.off('disconnect');
+        socket.off('connect_error');
+
+        // ✅ Properly close the connection
+        socket.disconnect();
+        if (data['Move2Page'] ==
+            AllScreenInProject.ORDERSCREEN.toString().split('.').last) {
+          final int typeProduct = data['value'] != null ? data['value'] : 0;
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => OrderScreen(typeProduct: typeProduct)),
+            );
+          }
+        } else if (data['Move2Page'] ==
+            AllScreenInProject.HOMEPAGESCREEN.toString().split('.').last) {
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const GridPage()),
+            );
+          }
+        } else if (data['Move2Page'] ==
+            AllScreenInProject.PAYMENTSCREEN.toString().split('.').last) {
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const PaymentScreen()),
+            );
+          }
         }
       }
     });
@@ -171,8 +242,16 @@ class _CartScreenState extends State<CartScreen> {
             padding: const EdgeInsets.only(left: 12.0),
             child: ElevatedButton.icon(
               onPressed: () {
+                socket.off('TourchScreenAction');
+                socket.off('connect');
+                socket.off('disconnect');
+                socket.off('connect_error');
+
+                // ✅ Properly close the connection
+                socket.disconnect();
+
                 Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (_) => const OrderScreen()),
+                  MaterialPageRoute(builder: (_) => const OrderScreen(typeProduct: 0,)),
                 );
               },
               icon: const Icon(Icons.arrow_back, size: 28), // bigger icon

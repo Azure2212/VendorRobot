@@ -1,10 +1,16 @@
+import 'dart:convert';
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:untitled3/Screens/cart_screen.dart';
 import 'package:untitled3/Screens/payment_screen.dart';
+import 'package:untitled3/Services/LogService.dart';
 import 'package:untitled3/enum/InteractionType.dart';
+import '../Enum/AllActionInProject.dart';
 import '../Enum/AllScreenInProject.dart';
 import '../Services/ProductService.dart';
 import '../models/cart.dart';
@@ -30,6 +36,7 @@ class _GridPageState extends State<GridPage> {
   bool showSidebar = false;
   late IO.Socket socket;
   final robotId = dotenv.env['ID_ROBOT'] ?? "1";
+  List<Product> products = [];
 
   @override
   void initState() {
@@ -37,8 +44,20 @@ class _GridPageState extends State<GridPage> {
     super.initState();
     _initSocket();
     ControlCamera.callCameraAPI(action: 'stop', IDDeliveryRecord: "None");
-    // final cartProvider = Provider.of<CartProvider>(context);
-    // cartProvider.clearCart();
+    _loadFakeData();
+  }
+
+  Future<void> _loadFakeData() async {
+    final jsonStr = await rootBundle.loadString('assets/data/fake_data.json');
+    final Map<String, dynamic> data = jsonDecode(jsonStr);
+
+    final List<Product> loadProducts = (data['inventory_items'] as List)
+        .map((e) => Product.fromJson(e))
+        .toList();
+
+    setState(() {
+      products = loadProducts;
+    });
   }
 
   void _initSocket() {
@@ -56,35 +75,63 @@ class _GridPageState extends State<GridPage> {
       socket.emit('join', {'room': robotId});
     });
 
+    final cartProvider = Provider.of<CartProvider>(context, listen: false);
     socket.on('TourchScreenAction', (data) async {
-      // print('Received action: $data');
-      if (data['Move2Page'] ==
-          AllScreenInProject.ORDERSCREEN.toString().split('.').last) {
-        if (mounted) {
-          socket.off('TourchScreenAction');
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const OrderScreen()),
-          );
+      cartProvider.clearCart();
+      socket.off('TourchScreenAction');
+      socket.off('connect');
+      socket.off('disconnect');
+      socket.off('connect_error');
+
+      // ✅ Properly close the connection
+      socket.disconnect();
+      if (data['action'] == Allactioninproject.ADD.toString().split('.').last) {
+        List<String> productNames = List<String>.from(data['value']['name']);
+        List<int> quantities = List<int>.from(data['value']['quantity']);
+
+        for (int i = 0; i < productNames.length; i++) {
+          String name = productNames[i];
+
+          for (Product p in products) {
+            if (p.name == name && quantities[i] > 0) {
+              print(quantities[i]);
+
+              cartProvider.addToCart(p, quantity: quantities[i]);
+              break;
+            }
+          }
         }
-        // }else if (data['Move2Page'] == AllScreenInProject.HOMEPAGESCREEN.toString().split('.').last) {
-        //   if (mounted) {
-        //     Navigator.of(context).pushReplacement(
-        //       MaterialPageRoute(builder: (_) => const GridPage()),
-        //     );
-        //   }
-      } else if (data['Move2Page'] ==
-          AllScreenInProject.CARTSCREEN.toString().split('.').last) {
+
         if (mounted) {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const CartScreen()),
           );
         }
-      } else if (data['Move2Page'] ==
-          AllScreenInProject.PAYMENTSCREEN.toString().split('.').last) {
-        if (mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const PaymentScreen()),
-          );
+      } else if (data['action'] ==
+          Allactioninproject.MOVE.toString().split('.').last) {
+        if (data['Move2Page'] ==
+            AllScreenInProject.ORDERSCREEN.toString().split('.').last) {
+          if (mounted) {
+            final int typeProduct = data['value'] != null ? data['value'] : 0;
+
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => OrderScreen(typeProduct: typeProduct)),
+            );
+          }
+        } else if (data['Move2Page'] ==
+            AllScreenInProject.CARTSCREEN.toString().split('.').last) {
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const CartScreen()),
+            );
+          }
+        } else if (data['Move2Page'] ==
+            AllScreenInProject.PAYMENTSCREEN.toString().split('.').last) {
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const PaymentScreen()),
+            );
+          }
         }
       }
     });
@@ -103,7 +150,6 @@ class _GridPageState extends State<GridPage> {
 
   @override
   Widget build(BuildContext context) {
-
     final size = MediaQuery.of(context).size;
     final cellWidth = size.width / GridPage.numberOfCell;
     final cellHeight = size.height / GridPage.numberOfCell;

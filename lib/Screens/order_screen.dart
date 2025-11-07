@@ -6,6 +6,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import 'package:untitled3/Enum/AllActionInProject.dart';
 import 'package:untitled3/Screens/payment_screen.dart';
 import 'package:untitled3/models/products.dart';
 import 'package:untitled3/screens/cart_screen.dart';
@@ -22,7 +23,9 @@ import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'grid_screen.dart';
 
 class OrderScreen extends StatefulWidget {
-  const OrderScreen({super.key});
+
+  final int typeProduct;
+  const OrderScreen({super.key, required this.typeProduct});
 
   @override
   State<OrderScreen> createState() => _OrderScreenState();
@@ -38,10 +41,19 @@ class _OrderScreenState extends State<OrderScreen> {
   int selectedIndex = 0;
   late IO.Socket socket;
   Timer? _inactivityTimer;
+  late DateTime startCount;
+
+  late int reachTime = 30;
+
+  late int typeProduct;
 
   @override
   void initState() {
     super.initState();
+    typeProduct = widget.typeProduct;
+    setState(() {
+      selectedIndex = typeProduct;
+    });
     ControlCamera.callCameraAPI(action: 'start', IDDeliveryRecord: "None");
     _loadFakeData();
     _initSocket();
@@ -49,32 +61,54 @@ class _OrderScreenState extends State<OrderScreen> {
   }
 
   void _startInactivityTimer() {
-
+    // Cancel old timer if it exists
     _inactivityTimer?.cancel();
 
-    _inactivityTimer = Timer(const Duration(seconds: 5), () async {
+    startCount = DateTime.now();
+    // Create a new timer using the latest reachTime value
+    _inactivityTimer = Timer(Duration(seconds: reachTime), () async {
       if (!mounted) return;
 
-      // Show a blocking loading dialog
+      // Show loading dialog
       showDialog(
         context: context,
-        barrierDismissible: false, // prevents user from closing it
+        barrierDismissible: false,
         builder: (context) {
-          return const Center(
-            child: CircularProgressIndicator(),
+          return WillPopScope(
+            onWillPop: () async => false, // disable back button
+            child: const AlertDialog(
+              backgroundColor: Colors.white,
+              title: Text(
+                "System Restarting",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "Please wait a moment, the system is restarting...",
+                    style: TextStyle(fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 20),
+                  CircularProgressIndicator(),
+                ],
+              ),
+            ),
           );
         },
       );
 
-      // Add a short delay to let the loading show before navigating
-      await Future.delayed(const Duration(seconds: 1));
+      // ✅ Give UI time to render the dialog first
+      await Future.delayed(const Duration(milliseconds: 100));
 
       if (mounted) {
         final cartProvider = Provider.of<CartProvider>(context, listen: false);
         cartProvider.clearCart();
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const GridPage()),
-        );
+
+        Navigator.of(
+          context,
+        ).pushReplacement(MaterialPageRoute(builder: (_) => const GridPage()));
       }
     });
   }
@@ -98,29 +132,108 @@ class _OrderScreenState extends State<OrderScreen> {
       socket.emit('join', {'room': robotId});
     });
 
+    final cartProvider = Provider.of<CartProvider>(context, listen: false);
     socket.on('TourchScreenAction', (data) {
       // print('Received action: $data');
-      if (data['Move2Page'] ==
-          AllScreenInProject.HOMEPAGESCREEN.toString().split('.').last) {
-        if (mounted) {
-          socket.off('TourchScreenAction');
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const GridPage()),
-          );
+
+      if (data['action'] ==
+          Allactioninproject.CHANGETYPE.toString().split('.').last) {
+        setState(() {
+          try {
+            _startInactivityTimer();
+            selectedIndex = data['value'];
+          } catch (e) {
+            selectedIndex = 0;
+            print(e);
+          }
+        });
+      } else if (data['action'] ==
+          Allactioninproject.REMOVE.toString().split('.').last) {
+        if (!mounted) return;
+        cartProvider.clearCart();
+      } else if (data['action'] ==
+          Allactioninproject.ADD.toString().split('.').last) {
+        List<String> productNames = List<String>.from(data['value']['name']);
+        List<int> quantities = List<int>.from(data['value']['quantity']);
+
+        for (int i = 0; i < productNames.length; i++) {
+          String name = productNames[i];
+          bool updateActivated = false;
+
+          for (CartItem item in cartProvider.items) {
+            if (item.product.name == name) {
+              // cartProvider.removeFromCart(item.product);
+              if (quantities[i] > 0) {
+                cartProvider.updateQuantity(
+                  item.product,
+                  item.quantity + quantities[i],
+                );
+              } else {
+                cartProvider.removeFromCart(item.product);
+              }
+              updateActivated = true;
+            }
+          }
+
+          if (updateActivated == false) {
+            for (Product p in products) {
+              if (p.name == name && quantities[i] > 0) {
+                print(quantities[i]);
+
+                cartProvider.addToCart(p, quantity: quantities[i]);
+                break;
+              }
+            }
+          }
         }
-      } else if (data['Move2Page'] ==
-          AllScreenInProject.CARTSCREEN.toString().split('.').last) {
-        if (mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const CartScreen()),
-          );
+      } else if (data['action'] ==
+          Allactioninproject.UPDATE.toString().split('.').last) {
+        List<String> productNames = List<String>.from(data['value']['name']);
+        List<int> quantities = List<int>.from(data['value']['quantity']);
+        for (int i = 0; i < productNames.length; i++) {
+          String name = productNames[i];
+          for (CartItem item in cartProvider.items) {
+            if (item.product.name == name) {
+              // cartProvider.removeFromCart(item.product);
+              if (quantities[i] > 0)
+                cartProvider.updateQuantity(item.product, quantities[i]);
+              else
+                cartProvider.removeFromCart(item.product);
+            }
+          }
         }
-      } else if (data['Move2Page'] ==
-          AllScreenInProject.PAYMENTSCREEN.toString().split('.').last) {
-        if (mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const PaymentScreen()),
-          );
+      } else if (data['action'] ==
+          Allactioninproject.MOVE.toString().split('.').last) {
+        if (data['Move2Page'] ==
+            AllScreenInProject.HOMEPAGESCREEN.toString().split('.').last) {
+          if (mounted) {
+            socket.off('TourchScreenAction');
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const GridPage()),
+            );
+          }
+        } else if (data['Move2Page'] ==
+            AllScreenInProject.CARTSCREEN.toString().split('.').last) {
+          if (mounted) {
+            socket.off('TourchScreenAction');
+            socket.off('connect');
+            socket.off('disconnect');
+            socket.off('connect_error');
+
+            // ✅ Properly close the connection
+            socket.disconnect();
+
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const CartScreen()),
+            );
+          }
+        } else if (data['Move2Page'] ==
+            AllScreenInProject.PAYMENTSCREEN.toString().split('.').last) {
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const PaymentScreen()),
+            );
+          }
         }
       }
     });
@@ -188,107 +301,108 @@ class _OrderScreenState extends State<OrderScreen> {
     // final products = currentCategory;
 
     return GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onTap: _resetTimer,
-        onPanDown: (_) => _resetTimer(),
-        child:  Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          "Choose Food",
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-        centerTitle: true,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (_) => const CartScreen()),
-                    );
-                  },
-                  icon: const Icon(Icons.shopping_cart_outlined),
-                  label: const Text('Cart'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Colors.white,
+      behavior: HitTestBehavior.translucent,
+      onTap: _resetTimer,
+      onPanDown: (_) => _resetTimer(),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            "Choose Food",
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+          centerTitle: true,
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 16.0),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const CartScreen()),
+                      );
+                    },
+                    icon: const Icon(Icons.shopping_cart_outlined),
+                    label: const Text('Cart'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Colors.white,
+                    ),
                   ),
-                ),
-                // Số lượng sản phẩm nhỏ trên icon
-                if (cartProvider.totalItems > 0)
-                  Positioned(
-                    right: 6,
-                    top: 4,
-                    child: Container(
-                      padding: const EdgeInsets.all(3),
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Text(
-                        cartProvider.totalItems.toString(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
+                  // Số lượng sản phẩm nhỏ trên icon
+                  if (cartProvider.totalItems > 0)
+                    Positioned(
+                      right: 6,
+                      top: 4,
+                      child: Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          cartProvider.totalItems.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
-      body: Listener(
-        onPointerDown: (_) => () {},
-        behavior: HitTestBehavior.translucent,
-        child: Column(
-          children: [
-            CategoryTabs(
-              categories: category.values.toList(),
-              selectedIndex: selectedIndex,
-              onTap: (i) => setState(() => selectedIndex = i),
-            ),
-            Expanded(
-              child: GridView.builder(
-                padding: const EdgeInsets.all(16),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 4,
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  childAspectRatio: 3 / 4,
-                ),
-                // itemCount: products.length,
-                itemCount: products
-                    .where((p) => p.category == category[selectedIndex])
-                    .length,
-                itemBuilder: (context, index) {
-                  final filteredProducts = products
-                      .where((p) => p.category == category[selectedIndex])
-                      .toList();
-                  final p = filteredProducts[index];
-                  return ProductCard(
-                    product: p,
-                    onAddToCart: (quantity) {
-                      cartProvider.addToCart(p, quantity: quantity);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('${p.name} added to cart'),
-                          duration: const Duration(seconds: 1),
-                        ),
-                      );
-                    },
-                  );
-                },
+                ],
               ),
             ),
           ],
         ),
+        body: Listener(
+          onPointerDown: (_) => () {},
+          behavior: HitTestBehavior.translucent,
+          child: Column(
+            children: [
+              CategoryTabs(
+                categories: category.values.toList(),
+                selectedIndex: selectedIndex,
+                onTap: (i) => setState(() => selectedIndex = i),
+              ),
+              Expanded(
+                child: GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 4,
+                    mainAxisSpacing: 16,
+                    crossAxisSpacing: 16,
+                    childAspectRatio: 3 / 4,
+                  ),
+                  // itemCount: products.length,
+                  itemCount: products
+                      .where((p) => p.category == category[selectedIndex])
+                      .length,
+                  itemBuilder: (context, index) {
+                    final filteredProducts = products
+                        .where((p) => p.category == category[selectedIndex])
+                        .toList();
+                    final p = filteredProducts[index];
+                    return ProductCard(
+                      product: p,
+                      onAddToCart: (quantity) {
+                        cartProvider.addToCart(p, quantity: quantity);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('${p.name} added to cart'),
+                            duration: const Duration(seconds: 1),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-    ),);
+    );
   }
 }

@@ -4,8 +4,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:untitled3/enum/InteractionType.dart';
 
+import '../Screens/order_screen.dart';
 import '../Services/ControlCamera.dart';
-import '../screens/order_screen.dart';
 
 class SideBar extends StatefulWidget {
   final bool isVisible;
@@ -108,11 +108,14 @@ class _SideBarState extends State<SideBar> {
       );
     }
 
-    Navigator.pushReplacement(
+    /*Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (_) => const OrderScreen(),
       ), // Replace HomeScreen with your actual widget name
+    );*/
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const OrderScreen(typeProduct: 0)),
     );
   }
 
